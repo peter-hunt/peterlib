@@ -1129,6 +1129,12 @@ def is_constant(expr: ExprLike, var: Var | None = None, /) -> bool:
         return is_constant(expr.arg)
     elif isinstance(expr, BinaryFunction):
         return is_constant(expr.arg1) and is_constant(expr.arg2)
+    elif isinstance(expr, Limit):
+        return is_constant(expr.expr) and is_constant(expr.var) and is_constant(expr.point)
+    elif isinstance(expr, Derivative):
+        return is_constant(expr.expr) and is_constant(expr.var)
+    elif isinstance(expr, Integral):
+        return is_constant(expr.expr) and is_constant(expr.var) and is_constant(expr.a) and is_constant(expr.b)
     else:
         return False
 
