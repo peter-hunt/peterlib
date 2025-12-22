@@ -35,10 +35,11 @@ Here are the current structures and functionalities supported or planned:
 - - `subs(expr, expr_map)`: Applying substitution without modifying the corresponding values or the result expression;
 - - `evalf(expr, value_map)`: Evaluating the number value of the expression with the given values of the related variables, or partially so if not all variables are given. See designer notes below for more information;
 - - `expand(expr)/expand_xxx(expr)`: Basic expansion of `Mul`, `Pow`, `Ln`/`Log`, trigs with both separated and all-in-one functions;
-- - `diff(expr, var, order=0, evaluate=True)`: Differentiation either in evaluating or constructing a `Derivative` instance with given variable and order. Equivalent to `Derivative(expr, var, order).doit()`. (doesn't work for `Abs` yet since piecewise is missing)
+- - `diff(expr, var, order=0, evaluate=True)`: Differentiation either in evaluating or constructing a `Derivative` instance with given variable and order. Equivalent to `Derivative(expr, var, order).doit()`. This doesn't work for `Abs` yet since piecewise function class is missing.
+- - `integrate(expr, var, a=None, b=None)`: Integration by evaluating an `Integral` instance with given variable and optional bounds. Equivalent to `Integral(expr, var, a, b).doit()`. This only works for monomial/polynomial with basic rules.
 
 ### Planned Structures
-- Functions: factorial, ceil, floor, sgn, mod, exp (construction only).
+- Functions: factorial, ceil, floor, sgn, modulo, exp (construction only).
 - Piecewise functions with binary search optimization for given values;
 - Equations and inequality structures. See designer notes below for more information.
 

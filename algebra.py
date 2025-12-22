@@ -353,6 +353,7 @@ ExprLike = Expr | Number
 
 @typechecked
 def frdiv(a: ExprLike, b: ExprLike, /) -> ExprLike:
+    """Fraction-safe version for division."""
     if isinstance(a, int) and isinstance(b, int):
         return Fraction(a, b)
     else:
@@ -361,19 +362,32 @@ def frdiv(a: ExprLike, b: ExprLike, /) -> ExprLike:
 
 @typechecked
 def frpow(a: ExprLike, b: ExprLike, /) -> ExprLike:
+    """Fraction-safe version for power."""
     if isinstance(a, int) and isinstance(b, int) and b < 0:
         return Fraction(1, a ** -b)
     else:
         return a ** b
 
 
+# Convert float -> 8 bytes big-endian → integer
+@typechecked
 def float_bits(x: float, /) -> int:
-    # Convert float -> 8 bytes big-endian → integer
+    """Convert float to an integer hash."""
     return int.from_bytes(pack(">d", x), "big")
 
 
 @typechecked
 def exprhash(expr: ExprLike, /) -> tuple[int | tuple, ...]:
+    """
+    Hash tuple generator for expressions and numbers.
+    Only int/float/Fraction are supported as non-Expr numbers.
+    This is used for sorting and hashing expressions.
+
+    :param expr: The expression or number to hash.
+    :type expr: ExprLike
+    :return: The tuple of relevant information.
+    :rtype: tuple[int | tuple, ...]
+    """
     if isinstance(expr, int):
         return (KEY_INT, expr)
     elif isinstance(expr, Fraction):
@@ -382,10 +396,24 @@ def exprhash(expr: ExprLike, /) -> tuple[int | tuple, ...]:
         return (KEY_FLT, float_bits(expr))
     elif isinstance(expr, Expr):
         return expr.exprhash()
+    elif isinstance(expr, Number):
+        raise TypeError(f"unsupported number type for"
+                        f" exprhash: {type(expr).__name__}")
+    else:
+        raise TypeError(f"unsupported value type for"
+                        f" exprhash: {type(expr).__name__}")
 
 
 @typechecked
 def exprsorted(iterable: Iterable[ExprLike], /) -> list[ExprLike]:
+    """
+    Sort iterable of expressions by descending exprhash.
+
+    :param iterable: The iterable of expressions to sort.
+    :type iterable: Iterable[ExprLike]
+    :return: The list of sorted expressions in descending order.
+    :rtype: list[ExprLike]
+    """
     return sorted(iterable, key=exprhash, reverse=True)
 
 
@@ -394,6 +422,15 @@ class Var(Expr):
     name: str
 
     def __init__(self, name: str, /):
+        """
+        Initialize a variable instance with given letter name.
+
+        :param self: Instance to be initialized.
+        :param name: The one-letter name from latin/greek alphabet.
+                     Note that letters with existing constant
+                     defined cannot be used: e, pi, phi.
+        :type name: str
+        """
         if len(name) != 1:
             raise ValueError(
                 "only single letters are allowed as variable names")
@@ -437,6 +474,16 @@ class Constant(Expr):
     value: Number
 
     def __init__(self, name: str, value: Number, /):
+        """
+        Initialize a mathematical constant instance with given name
+        and value.
+
+        :param self: Instance to be initialized.
+        :param name: The one-letter name from latin/greek alphabet.
+        :type name: str
+        :param value: The constant value for evaluation purposes.
+        :type value: Number
+        """
         self.name = name
         self.value = value
 
@@ -447,7 +494,6 @@ class Constant(Expr):
         return self.name
 
     def exprhash(self) -> CanonicalKey:
-        # return (KEY_CNS, VARIABLE_LETTERS.index(self.name))
         return (KEY_CNS, VARIABLE_LETTERS[::-1].index(self.name))
 
     def _evalf(self, value_map: ValueMap, /) -> ExprLike:
@@ -458,6 +504,7 @@ class Constant(Expr):
 
 
 def format_term(term: ExprLike, /) -> tuple[bool, str]:
+    """Format term for Add instance printing."""
     if isinstance(term, Mul):
         if len(term.factors) == 1 and term.coef == -1:
             return (False, f"{term.factors[0]}")
@@ -477,6 +524,14 @@ class Add(Expr):
     const: Number = 0
 
     def __init__(self, *terms: list[ExprLike]):
+        """
+        Initialize an addition instance with given terms.
+        Python numbers are combined and terms are sorted.
+
+        :param self: Instance to be initialized.
+        :param terms: The elements of the addition.
+        :type terms: list[ExprLike]
+        """
         self.terms = []
         self.const = 0
         for term in terms:
@@ -525,12 +580,13 @@ class Add(Expr):
 
 
 def format_factor(term: ExprLike, /) -> tuple[bool, str]:
+    """Format factor for Mul instance printing."""
     if isinstance(term, Pow):
         if is_constant(term.expo):
-            exp_value = evalf(term.expo)
-            if exp_value == -1:
+            expo_value = evalf(term.expo)
+            if expo_value == -1:
                 return (False, f"{term.base}")
-            elif exp_value < 0:
+            elif expo_value < 0:
                 return (False, f"{term.base ** (-term.expo)}")
         elif isinstance(term.expo, Mul):
             if term.expo.coef < 0:
@@ -547,6 +603,14 @@ class Mul(Expr):
     coef: Number = 1
 
     def __init__(self, *factors: list[ExprLike]):
+        """
+        Initialize a multiplication instance with given factors.
+        Python numbers are combined and factors are sorted.
+
+        :param self: Instance to be initialized.
+        :param factors: The elements of the multiplication.
+        :type factors: list[ExprLike]
+        """
         self.factors = []
         self.coef = 1
         for factor in factors:
@@ -620,9 +684,18 @@ class Pow(Expr):
     base: ExprLike
     expo: ExprLike
 
-    def __init__(self, base: ExprLike, exp: ExprLike, /):
+    def __init__(self, base: ExprLike, expo: ExprLike, /):
+        """
+        Initialize a power instance with given base and exponent.
+
+        :param self: Instance to be initialized.
+        :param base: The base of the power.
+        :type base: ExprLike
+        :param expo: The exponent of the power.
+        :type expo: ExprLike
+        """
         self.base = base
-        self.expo = exp
+        self.expo = expo
 
     def __repr__(self):
         return f"Pow({self.base!r}, {self.expo!r})"
@@ -631,22 +704,22 @@ class Pow(Expr):
         base_str = f"{self.base}"
         if isinstance(self.base, Add | Mul):
             base_str = f"({base_str})"
-        exp_str = f"{self.expo}"
+        expo_str = f"{self.expo}"
         if is_constant(self.expo):
-            exp_value = evalf(self.expo)
-            if exp_value == -1:
+            expo_value = evalf(self.expo)
+            if expo_value == -1:
                 return f"1 / {base_str}"
-            elif exp_value < 0:
+            elif expo_value < 0:
                 return f"1 / {base_str}^{-self.expo}"
         elif isinstance(self.expo, Mul):
             if self.expo.coef < 0:
-                exp_str = f"{-self.expo}"
-                if '*' in exp_str:
-                    exp_str = f"({exp_str})"
-                return f"1 / {base_str}^{exp_str}"
+                expo_str = f"{-self.expo}"
+                if '*' in expo_str:
+                    expo_str = f"({expo_str})"
+                return f"1 / {base_str}^{expo_str}"
         if isinstance(self.expo, Add | Mul):
-            exp_str = f"({exp_str})"
-        return f"{base_str}^{exp_str}"
+            expo_str = f"({expo_str})"
+        return f"{base_str}^{expo_str}"
 
     def exprhash(self) -> CanonicalKey:
         return (KEY_POW, exprhash(self.base), exprhash(self.expo))
@@ -665,11 +738,11 @@ class Pow(Expr):
         elif self.expo % 1 != 0:
             return self
         # to maximize floating point safety in cost of efficiency
-        exp = round(self.expo)
+        expo = round(self.expo)
 
         all_terms = [self.base.const] + self.base.terms
         return sum(prod(group) for group in iterprod(
-            *([all_terms] * exp)
+            *([all_terms] * expo)
         ))
 
     def _expand_pow(self) -> Union["Expr", Number]:
@@ -678,10 +751,10 @@ class Pow(Expr):
         else:
             base_objs = [self.base]
         if isinstance(self.expo, Add):
-            exp_objs = [self.expo.const] + self.expo.terms
+            expo_objs = [self.expo.const] + self.expo.terms
         else:
-            exp_objs = [self.expo]
-        return prod(frpow(base, exp) for base, exp in iterprod(base_objs, exp_objs))
+            expo_objs = [self.expo]
+        return prod(frpow(base, expo) for base, expo in iterprod(base_objs, expo_objs))
 
     def _diff(self, var: Var, /) -> ExprLike:
         if self.base == e:
@@ -703,6 +776,13 @@ class UnaryFunction(Function):
     arg: ExprLike
 
     def __init__(self, arg: ExprLike, /):
+        """
+        Initialize a unary function instance with given argument.
+
+        :param self: Instance to be initialized.
+        :param arg: The argument for the function.
+        :type arg: ExprLike
+        """
         self.arg = arg
 
     def __repr__(self):
@@ -744,6 +824,15 @@ class BinaryFunction(Function):
     arg2: ExprLike
 
     def __init__(self, arg1: ExprLike, arg2: ExprLike, /):
+        """
+        Initialize a binary function instance with given arguments.
+
+        :param self: Instance to be initialized.
+        :param arg1: First argument for the function.
+        :type arg1: ExprLike
+        :param arg2: Second argument for the function.
+        :type arg2: ExprLike
+        """
         self.arg1 = arg1
         self.arg2 = arg2
 
@@ -1013,6 +1102,22 @@ class Limit(Expr):
 
     def __init__(self, expr: ExprLike, var: Var,
                  point: ExprLike, direction: int = 0, /):
+        """
+        Initialize a limit instance with given expression, variable,
+        limit value point, and optional direction.
+
+        :param self: Instance to be initialized.
+        :param expr: The expression for the limit.
+        :type expr: ExprLike
+        :param var: The variable of the limit.
+        :type var: Var
+        :param point: The value point of the limit.
+        :type point: ExprLike
+        :param direction: The optional direction for the value point.
+                          -1 for left (-), 0 for both ( ), and 1 for right (+).
+                          Default to both sides.
+        :type direction: int
+        """
         if direction not in (-1, 0, 1):
             raise TypeError(f"direction must be -1 or 0 or 1,"
                             f" not {direction}")
@@ -1041,6 +1146,12 @@ class Limit(Expr):
                   self.direction), *args,
         )
 
+    def _doit(self):
+        if is_constant(self.expr, self.var):
+            return self.expr
+        else:
+            return self
+
 
 @inherit_docstrings
 class Derivative(Expr):
@@ -1050,8 +1161,23 @@ class Derivative(Expr):
 
     def __init__(self, expr: ExprLike, var: Var,
                  order: int = 1, /):
+        """
+        Initialize a derivative instance with given expression, variable,
+        and optional order (default to first order).
+
+        :param self: Instance to be initialized.
+        :param expr: The expression for the derivative.
+        :type expr: ExprLike
+        :param var: The variable to take the derivative with.
+        :type var: Var
+        :param order: The order of the derivative, default to 1.
+        :type order: int
+        """
         self.expr = expr
         self.var = var
+        if order <= 0:
+            raise ValueError(f"the order of a derivative must be"
+                             f" a positive integer, got {order}")
         self.order = order
 
     def __str__(self):
@@ -1107,11 +1233,27 @@ class Integral(Expr):
 
     def __init__(self, expr: ExprLike, var: Var,
                  a: ExprLike | None = None, b: ExprLike | None = None, /):
+        """
+        Initialize an integral instance with given expression, variable,
+        and optional bounds (default to be both None). Bounds must either
+        be both ExprLike values for a definite integral or both None
+        for an indefinite integral.
+
+        :param self: Instance to be initialized.
+        :param expr: The expression for the integral.
+        :type expr: ExprLike
+        :param var: The variable to take the integral with.
+        :type var: Var
+        :param a: Optional lower bound.
+        :type a: ExprLike | None
+        :param b: Optional upper bound.
+        :type b: ExprLike | None
+        """
         self.expr = expr
         self.var = var
         if (a is None) != (b is None):
             raise ValueError("Integrals must either have both"
-                             " bounds defined or undefined")
+                             " bounds defined or both undefined")
         self.a = a
         self.b = b
 
@@ -1545,6 +1687,7 @@ def evalf(expr: ExprLike, value_map: ValueMap | None = None, /) -> ExprLike:
 # but at some point it's pointless to factor
 @typechecked
 def factor(expr: ExprLike, /) -> ExprLike:
+    """Factor polynomial-like expressions."""
     return expr if isinstance(expr, Expr) else expr
 
 
@@ -1604,32 +1747,33 @@ def reduce(expr: ExprLike, /) -> ExprLike:
     return expr if isinstance(expr, Expr) else expr
 
 
-# Reduce rational
 @typechecked
 def cancel(expr: ExprLike, /) -> ExprLike:
+    """Reduce rational with an expression."""
     return expr if isinstance(expr, Expr) else expr
 
 
-# Combine over common denominator
 @typechecked
 def together(expr: ExprLike, /) -> ExprLike:
+    """Combine over common denominator."""
     return expr if isinstance(expr, Expr) else expr
 
 
-# Partial fraction decomposition
 @typechecked
 def apart(expr: ExprLike, /) -> ExprLike:
+    """Perform partial fraction decomposition."""
     return expr if isinstance(expr, Expr) else expr
 
 
-# grouping the expression by variable
 @typechecked
 def collect(expr: ExprLike, var: Var, /) -> ExprLike:
+    """Group the expression by given variable."""
     return expr if isinstance(expr, Expr) else expr
 
 
 @typechecked
 def simplify(expr: ExprLike, /) -> ExprLike:
+    """Simplify the given expression with basic math rules."""
     return expr if isinstance(expr, Expr) else expr
 
 
