@@ -46,7 +46,8 @@ Here are the current structures and functionalities supported or planned:
 - - `evalf(expr, value_map)`: Evaluating the number value of the expression with the given values of the related variables, or partially so if not all variables are given. See designer notes below for more information;
 - - `expand(expr)/expand_xxx(expr)`: Basic expansion of `Mul`, `Pow`, `Ln`/`Log`, trigs with both separated and all-in-one functions;
 - - `diff(expr, var, order=0, evaluate=True)`: Differentiation either in evaluating or constructing a `Derivative` instance with given variable and order. Equivalent to `Derivative(expr, var, order).doit()`. This doesn't work for `Abs` yet since piecewise function class is missing.
-- - `integrate(expr, var, a=None, b=None)`: Integration by evaluating an `Integral` instance with given variable and optional bounds. Equivalent to `Integral(expr, var, a, b).doit()`. This only works for monomial/polynomial with basic rules.
+- - `integrate(expr, var, a=None, b=None)`: Integration by evaluating an `Integral` instance with given variable and optional bounds. Equivalent to `Integral(expr, var, a, b).doit()`. This only works for monomial/polynomial with basic rules;
+- Expanded `exprhash` as `sethash` with each `Set`s added.
 
 ### Planned Structures
 
@@ -63,7 +64,10 @@ Here are the current structures and functionalities supported or planned:
 
 ### Planned Functionalities
 
-- Expand `exprhash` to be eventually `mathhash` with each level added: `Statement` and `Set`;
+- Simplifying nested set operators;
+- Fixing the hash tuple sorting in a more systematic way;
+- Checking for subset and superset relationships;
+- Backward supporting inputting `Set` in some `Expr` functions that would make sense;
 - Set theory as a class and supporting set theory concepts;
 - Solving equations and inequalities;
 - Limit and integral evaluation with function to construct or evaluate;

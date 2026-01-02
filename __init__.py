@@ -6,11 +6,13 @@ from solve import *
 from solve import __all__ as __solve_all__
 from statement import *
 from statement import __all__ as __statement_all__
+from tags import *
+from tags import __all__ as __tags_all__
 from utils import *
 from utils import __all__ as __utils_all__
 
 
 __all__ = (
     __expr_all__ + __sets_all__ + __solve_all__
-    + __statement_all__ + __utils_all__
+    + __statement_all__ + __tags_all__ + __utils_all__
 )
