@@ -1,7 +1,7 @@
 from expr import *
 from expr import __all__ as __expr_all__
-from set_theory import *
-from set_theory import __all__ as __sets_all__
+from sets import *
+from sets import __all__ as __sets_all__
 from solve import *
 from solve import __all__ as __solve_all__
 from statement import *

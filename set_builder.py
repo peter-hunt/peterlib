@@ -1,4 +1,4 @@
-from set_theory import Set
+from sets import Set
 from statement import Statement
 
 

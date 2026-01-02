@@ -12,7 +12,7 @@ If used in a folder, put `.` in front of the relative imports, e.g. `utils.py`, 
 
 - `expr.py`: Python computer algebra system (CAS) for mathematical expressions;
 - `xxx_test.py`: Relevant test code for each module and for example usage;
-- `set_theory.py`: (Work in Progress) Set theory logic for number domains, set operations, solution sets and so on;
+- `sets.py`: (Work in Progress) Set theory logic for number domains, set operations, solution sets and so on;
 - `statement.py`: (Work in Progress) Types for equations, inequalities, diffeq, etc.;
 - `solve.py`: (Work in Progress) Solvers for equations, inequalities, diffeq, etc..
 - `utils.py`: Common code for all other usages;
@@ -25,7 +25,7 @@ Here are the current structures and functionalities supported or planned:
 
 ### Current Structures
 
-- Expr class to have all other CAS classes as subclasses;
+- `Expr` superclass for CAS classes;
 - Number literals. Complex numbers are supported but not much suggested;
 - Single-letter `Var`. See designer notes below for more information;
 - Mathematical `Constant`s:
@@ -33,7 +33,13 @@ Here are the current structures and functionalities supported or planned:
   - Special constants like `inf`, `-inf`, and `undefined` for intervals, invalid operations, and so on. (Work in Progress)
 - `Add`, `Mul`, and `Pow` nodes, where subtraction and division are represented with those only but printed properly. See designer notes below for more information;
 - `Function` structures for one and two variable functions, where currently implemented are abs, trigs, arctrigs, ln/log.
-- `Limit`, `Derivative`, and `Integral` structures, although mostly not yet functional.
+- `Limit`, `Derivative`, and `Integral` structures, although mostly not yet functional;
+- `Set` superclass;
+- Set operation structures: `Union`, `Intersection`, `Difference`, and `Complement`;
+- `UniversalSet` and `EmptySet`;
+- `FiniteSet` for finite element evaluations;
+- `NumberDomain` superclass for natural, integer, rational, real, and complex sets;
+- `ConstInterval` for constant interval to enable denoting intervals for solutions.
 
 ### Current Functionalities
 
@@ -51,12 +57,11 @@ Here are the current structures and functionalities supported or planned:
 
 ### Planned Structures
 
-- An implementation of set theory to support and organize statements and solutions in a much more systematic manner;
+- An implementation of sets to support and organize statements and solutions in a much more systematic manner;
 - `Statement` class with equality and inequalities:
   - Equality, not to be confused with Equation.See designer notes below for more information ;
   - Inequality structures. See designer notes below for more information.
-- `Set` class with `Interval`, `FiniteSet`, `Union`, `NaturalSet` to `ComplexSet`;
-  - And the `SetBuilder` with separate code since it requires the `Statement` class, which requires `Set` class for the number domains.
+- `SetBuilder` with separate code since it requires the `Statement` class, which requires `Set` class for the number domains.
 - Contraints like domain sets and intervals to feed into statements;
 - Functions: factorial, ceil, floor, sgn, modulo, exp (construction only).
 - Piecewise functions with binary search optimization for given values;
@@ -64,11 +69,13 @@ Here are the current structures and functionalities supported or planned:
 
 ### Planned Functionalities
 
+- Variable class, expanded or separate, for sets;
 - Simplifying nested set operators;
 - Fixing the hash tuple sorting in a more systematic way;
 - Checking for subset and superset relationships;
+- Evaluating set operations on constant intervals;
 - Backward supporting inputting `Set` in some `Expr` functions that would make sense;
-- Set theory as a class and supporting set theory concepts;
+- Supporting set theory concepts;
 - Solving equations and inequalities;
 - Limit and integral evaluation with function to construct or evaluate;
 - The series of factor/combine functions to factor `Add`, `Mul` and combine `Ln`/`Log`, trigs and so on;

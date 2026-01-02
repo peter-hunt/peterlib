@@ -1,4 +1,4 @@
-from set_theory import *
+from sets import *
 
 
 def basics_test():

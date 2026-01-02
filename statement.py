@@ -1,5 +1,5 @@
 from expr import ExprLike
-from set_theory import Set
+from sets import Set
 
 
 __all__ = [
