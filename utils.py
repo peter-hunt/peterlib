@@ -1,6 +1,11 @@
 __all__ = [
+    "cmp",
     "inherit_docstrings",
 ]
+
+
+def cmp(a, b):
+    return -1 if a < b else 0 if a == b else 1
 
 
 def inherit_docstrings(cls: type) -> type:

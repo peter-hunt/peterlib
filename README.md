@@ -1,5 +1,11 @@
 # PeterMath
 
+![License](https://img.shields.io/github/license/peter-hunt/petermath)
+![GitHub repo size](https://img.shields.io/github/repo-size/peter-hunt/petermath)
+![Last Commit](https://img.shields.io/github/last-commit/peter-hunt/petermath)
+![GitHub Repo stars](https://img.shields.io/github/stars/peter-hunt/petermath)
+
+
 A math library for Python functions like Computer Algebra System (CAS) for math expressions, set theory and number domains, equation/inequality solvers, and future contents to come.
 
 ## Usage
@@ -10,12 +16,15 @@ If used in a folder, put `.` in front of the relative imports, e.g. `utils.py`, 
 
 ## Table of Content
 
+- `__init__.py`: Compilation of all the content in the library. Note that `polynomial` is not added to the `__init__.py` and must be imported separately like `import petermath.polynomial` to avoid confusion with the `Expr` structures;
 - `expr.py`: Python computer algebra system (CAS) for mathematical expressions;
-- `xxx_test.py`: Relevant test code for each module and for example usage;
 - `sets.py`: (Work in Progress) Set theory logic for number domains, set operations, solution sets and so on;
 - `statement.py`: (Work in Progress) Types for equations, inequalities, diffeq, etc.;
-- `solve.py`: (Work in Progress) Solvers for equations, inequalities, diffeq, etc..
-- `utils.py`: Common code for all other usages;
+- `polynomial.py`: (Work in Progress) Data structure optimized for single-variable natural-number-power preferably-rational-coefficients polynomials for solving and factoring;
+- `solve.py`: (Work in Progress) Solvers for equations, inequalities, diffeq, etc.;
+- `xxx_test.py`: Relevant test code for each module and for example usage;
+- `xxx_utils.py`: Utility code based on the original implement but not required for the original;
+- `utils.py`: Common code for all other usages.
 
 ## Computer Algebra System
 

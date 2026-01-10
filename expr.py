@@ -45,7 +45,7 @@ __all__ = [
     "Constant",
     "e", "pi", "tau", "phi",
     "inf", "undefined",
-    "is_special_const", "is_literal", "is_infinite", "is_finite", "get_value", "get_sign",
+    "is_special_const", "is_literal", "is_infinite", "is_finite", "get_sign",
     "format_term", "Add",
     "format_factor", "Mul",
     "Pow",
@@ -74,7 +74,7 @@ VARIABLE_LETTERS = (
 RESERVED_LETTERS = "eπτφΣΠ"
 
 
-CanonicalKey = tuple[int | float | tuple, ...]
+type CanonicalKey = tuple[int | float | tuple, ...]
 
 
 @typechecked
@@ -527,7 +527,7 @@ class Expr:
         raise NotImplementedError
 
 
-ExprLike = Expr | Number
+type ExprLike = Expr | Number
 
 
 @typechecked
@@ -651,8 +651,8 @@ class Var(Expr):
         return 1 if var == self else 0
 
 
-ExprMap = dict[Var, ExprLike]
-ExprValueMap = dict[Var, Number]
+type ExprMap = dict[Var, ExprLike]
+type ExprValueMap = dict[Var, Number]
 
 
 @typechecked
@@ -931,6 +931,7 @@ class Constant(Expr):
 @inherit_docstrings
 class Infinity(Constant):
     name: str = "Infinity"
+    value: Number = math_inf
 
     def __init__(self, /):
         """
@@ -955,6 +956,7 @@ class Infinity(Constant):
 @inherit_docstrings
 class NegativeInfinity(Constant):
     name: str = "-Infinity"
+    value: Number = -math_inf
 
     def __init__(self, /):
         """
@@ -979,6 +981,7 @@ class NegativeInfinity(Constant):
 @inherit_docstrings
 class Undefined(Constant):
     name: str = "Undefined"
+    value: Number = math_nan
 
     def __init__(self, /):
         """
@@ -1068,22 +1071,6 @@ def is_finite(expr: ExprLike, /) -> bool:
 
 @typechecked
 @number_casted
-def get_value(expr: ExprLike, /) -> Number:
-    """
-    Obtain the number value of the constant or number.
-
-    :param expr: The number or constant to get the value of.
-    :type expr: ExprLike
-    :return: The number value.
-    :rtype: Number
-    """
-    if not is_finite(expr):
-        raise ValueError(f"value must be finite, got {expr}")
-    return expr.value if isinstance(expr, Constant) else expr
-
-
-@typechecked
-@number_casted
 def get_sign(expr: ExprLike, /) -> int | None:
     """
     Determine the sign of the constant in terms of -1/0/1,
@@ -1094,19 +1081,18 @@ def get_sign(expr: ExprLike, /) -> int | None:
     :return: The sign in -1/0/1 format or None.
     :rtype: int | None
     """
-    if is_literal(expr):
-        if expr == undefined:
-            return
-        elif expr == inf:
-            return 1
-        elif expr == -inf:
-            return 1
-        elif isinstance(expr, Constant):
-            return 1 if expr.value > 0 else 0 if expr.value == 0 else -1
-        else:
-            return 1 if expr > 0 else 0 if expr == 0 else -1
+    if not is_literal(expr):
+        raise ValueError("cannot get sign of non-literal expression")
+    if expr == undefined:
+        raise ValueError("cannot get sign of undefined")
+    if expr == inf:
+        return 1
+    elif expr == -inf:
+        return 1
+    elif isinstance(expr, Constant):
+        return 1 if expr.value > 0 else 0 if expr.value == 0 else -1
     else:
-        return
+        return 1 if expr > 0 else 0 if expr == 0 else -1
 
 
 @typechecked
@@ -1168,14 +1154,14 @@ class Add(Expr):
     const: Number = 0
 
     @number_casted
-    def __init__(self, *terms: list[ExprLike]):
+    def __init__(self, *terms: tuple[ExprLike]):
         """
         Initialize an addition instance with given terms.
         Python numbers are combined and terms are sorted.
 
         :param self: Instance to be initialized.
         :param terms: The elements of the addition.
-        :type terms: list[ExprLike]
+        :type terms: tuple[ExprLike]
         """
         self.terms = []
         self.const = 0
@@ -1251,14 +1237,14 @@ class Mul(Expr):
     coef: Number = 1
 
     @number_casted
-    def __init__(self, *factors: list[ExprLike]):
+    def __init__(self, *factors: tuple[ExprLike]):
         """
         Initialize a multiplication instance with given factors.
         Python numbers are combined and factors are sorted.
 
         :param self: Instance to be initialized.
         :param factors: The elements of the multiplication.
-        :type factors: list[ExprLike]
+        :type factors: tuple[ExprLike]
         """
         self.factors = []
         self.coef = 1
@@ -1973,8 +1959,10 @@ class Integral(Expr):
             return self
         elif self.lower is None:
             return indef_result
-        else:
+        elif is_finite(self.lower) and is_finite(self.upper):
             return indef_result.subs({self.var: self.upper}) - indef_result.subs({self.var: self.lower})
+        else:
+            return self
 
     def _diff(self, var: Var, /) -> ExprLike:
         if self.var == var and self.lower is None and self.upper is None:
@@ -2121,8 +2109,8 @@ def split_mono(expr: ExprLike, var: Var, /) -> tuple[ExprLike, ExprLike]:
         elif isinstance(factor, Var):
             expo += 1
         elif isinstance(factor, Mul):
-            raise ValueError(
-                "Mul instance not expected as monomial is expanded")
+            raise ValueError("Mul instance not expected"
+                             " as monomial is expanded")
         elif isinstance(factor, Pow):
             if factor.base == var:
                 expo += factor.expo
