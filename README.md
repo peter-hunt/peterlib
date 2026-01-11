@@ -21,6 +21,7 @@ If used in a folder, put `.` in front of the relative imports, e.g. `utils.py`, 
 - `sets.py`: (Work in Progress) Set theory logic for number domains, set operations, solution sets and so on;
 - `statement.py`: (Work in Progress) Types for equations, inequalities, diffeq, etc.;
 - `polynomial.py`: (Work in Progress) Data structure optimized for single-variable natural-number-power preferably-rational-coefficients polynomials for solving and factoring;
+- `rational_complex.py`: Complex number class with integer or fraction being the value to avoid floating-point precision issues. Intended to be used for rational complex polynomial solving but the binary search and irrational solutions won't use rational complex numbers a lot;
 - `solve.py`: (Work in Progress) Solvers for equations, inequalities, diffeq, etc.;
 - `xxx_test.py`: Relevant test code for each module and for example usage;
 - `xxx_utils.py`: Utility code based on the original implement but not required for the original;

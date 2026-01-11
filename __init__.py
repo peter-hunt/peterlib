@@ -2,6 +2,8 @@ from expr import *
 from expr import __all__ as __expr_all__
 from expr_utils import *
 from expr_utils import __all__ as __expr_utils_all__
+from rational_complex import *
+from rational_complex import __all__ as __rational_complex_all__
 from sets import *
 from sets import __all__ as __sets_all__
 from solve import *
@@ -15,6 +17,6 @@ from utils import __all__ as __utils_all__
 
 
 __all__ = (
-    __expr_all__ + __expr_utils_all__ + __sets_all__ + __solve_all__
-    + __statement_all__ + __tags_all__ + __utils_all__
+    __expr_all__ + __expr_utils_all__ + __rational_complex_all__ + __sets_all__
+    + __solve_all__ + __statement_all__ + __tags_all__ + __utils_all__
 )

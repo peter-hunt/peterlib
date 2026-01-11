@@ -21,7 +21,7 @@ def basic_test():
     print(f"{divmod(a, b)=}")
     print(a - 6)
     print((a - 6).real_solutions)
-    c = Polynomial(0, 1, 2, 3, 4, 5, 6, 7, 8)
+    c = RealPoly(0, 1, 2, 3, 4, 5, 6, 7, 8)
     print(c)
     print(c.real_solutions)
     for x in c.real_solutions:

@@ -1,28 +1,29 @@
 from fractions import Fraction
 from itertools import zip_longest
 from math import inf
-from numbers import Number
+from numbers import Real
 
 from .utils import cmp
 
 
-__all__ = ["Polynomial", "X"]
+__all__ = ["RealPoly", "X"]
 
 
 DIVIDE_TO_FRACTION = True
 RENDER_AS_FRACTION = False
+ALLOW_REAL_CASTING = True
 
 
 if RENDER_AS_FRACTION:
     # may render 1.6666666666666667 as 7505999378950827/4503599627370496
-    # if fractions are not used through calculations
-    def format_float(number: Number, /) -> str:
+    # if fractions are not always used through calculations
+    def format_float(number: Real, /) -> str:
         return f"{number:.0f}" if number % 1 == 0 else f"{Fraction(number)}"
 else:
-    def format_float(number: Number, /) -> str:
+    def format_float(number: Real, /) -> str:
         return f"{number:.0f}" if number % 1 == 0 else f"{number}"
 if DIVIDE_TO_FRACTION:
-    def div(a: Number, b: Number) -> Number:
+    def div(a: Real, b: Real) -> Real:
         a = int(a) if a % 1 == 0 else a
         b = int(b) if b % 1 == 0 else b
         if isinstance(a, int) and isinstance(b, int):
@@ -30,22 +31,35 @@ if DIVIDE_TO_FRACTION:
         else:
             return a / b
 else:
-    def div(a: Number, b: Number) -> Number:
+    def div(a: Real, b: Real) -> Real:
         return a / b
 
 
-class Polynomial:
-    coefs: tuple[Number]
+class RealPoly:
+    coefs: tuple[Real]
 
-    def __init__(self, *coefs: Number):
+    def __init__(self, *coefs: Real):
         # constant and coeffcients of natural number power polynomial,
         # starting with constant and sorted in increasing power:
         # for example, x ** 2 - 3 * x + 2 is written as (2, -3, 1).
         # the trailing zeroes are always hidden.
+        coef_list = []
         for coef in coefs:
-            if not isinstance(coef, Number):
-                raise TypeError("coefficients must be numbers")
-        self.coefs = (0,) if len(coefs) == 0 else coefs
+            if ALLOW_REAL_CASTING and isinstance(coef, complex):
+                if coef.imag == 0:
+                    coef_list.append(coef.real)
+                else:
+                    raise ValueError(
+                        "coefficients must be numbers with real values")
+            elif isinstance(coef, Real):
+                coef_list.append(coef)
+            else:
+                if ALLOW_REAL_CASTING:
+                    raise ValueError(
+                        "coefficients must be numbers with real values")
+                else:
+                    raise TypeError("coefficients must be real numbers")
+        self.coefs = (0,) if len(coef_list) == 0 else tuple(coef_list)
         while self.coefs[-1] == 0 and len(self.coefs) > 1:
             self.coefs = self.coefs[:-1]
 
@@ -94,98 +108,98 @@ class Polynomial:
                 result += f"x^{expo}"
         return result
 
-    def __call__(self, value: Number, /):
+    def __call__(self, value: Real, /):
         return sum(coef * value ** expo for expo, coef in enumerate(self))
 
     def __len__(self):
         return 0 if self.coefs == (0,) else len(self.coefs)
 
-    def __getitem__(self, key: int) -> Number:
+    def __getitem__(self, key: int) -> Real:
         return self.coefs[key]
 
     def __iter__(self):
         return iter(self.coefs)
 
-    def __add__(self, other: Polynomial | Number) -> Polynomial:
-        if isinstance(other, Polynomial):
-            return Polynomial(*(scoef + ocoef for scoef, ocoef in zip_longest(self, other, fillvalue=0)))
-        elif isinstance(other, Number):
-            return Polynomial(*((self[0] + other,) + self[1:]))
+    def __add__(self, other: RealPoly | Real) -> RealPoly:
+        if isinstance(other, RealPoly):
+            return RealPoly(*(scoef + ocoef for scoef, ocoef in zip_longest(self, other, fillvalue=0)))
+        elif isinstance(other, Real):
+            return RealPoly(*((self[0] + other,) + self[1:]))
         else:
             return NotImplemented
 
-    def __radd__(self, other: Number) -> Polynomial:
-        if isinstance(other, Number):
-            return Polynomial(*((self[0] + other,) + self[1:]))
+    def __radd__(self, other: Real) -> RealPoly:
+        if isinstance(other, Real):
+            return RealPoly(*((self[0] + other,) + self[1:]))
         else:
             return NotImplemented
 
-    def __sub__(self, other: Polynomial | Number) -> Polynomial:
-        if isinstance(other, Polynomial):
-            return Polynomial(*(scoef - ocoef for scoef, ocoef in zip_longest(self, other, fillvalue=0)))
-        elif isinstance(other, Number):
-            return Polynomial(self[0] - other, *self[1:])
+    def __sub__(self, other: RealPoly | Real) -> RealPoly:
+        if isinstance(other, RealPoly):
+            return RealPoly(*(scoef - ocoef for scoef, ocoef in zip_longest(self, other, fillvalue=0)))
+        elif isinstance(other, Real):
+            return RealPoly(self[0] - other, *self[1:])
         else:
             return NotImplemented
 
-    def __rsub__(self, other: Number) -> Polynomial:
-        if isinstance(other, Number):
-            return Polynomial(other - self[0], *(-coef for coef in self[1:]))
+    def __rsub__(self, other: Real) -> RealPoly:
+        if isinstance(other, Real):
+            return RealPoly(other - self[0], *(-coef for coef in self[1:]))
         else:
             return NotImplemented
 
-    def __mul__(self, other: Polynomial | Number) -> Polynomial:
-        if isinstance(other, Polynomial):
-            return Polynomial(*(
+    def __mul__(self, other: RealPoly | Real) -> RealPoly:
+        if isinstance(other, RealPoly):
+            return RealPoly(*(
                 sum(
                     scoef * other[rexpo - sexpo]
                     for sexpo, scoef in [*enumerate(self)][max(rexpo - len(other) + 1, 0):rexpo + 1]
                 )
                 for rexpo in range(len(self) + len(other) - 1)
             ))
-        elif isinstance(other, Number):
-            return Polynomial(*(coef * other for coef in self))
+        elif isinstance(other, Real):
+            return RealPoly(*(coef * other for coef in self))
         else:
             return NotImplemented
 
-    def __rmul__(self, other: Number) -> Polynomial:
-        if isinstance(other, Number):
-            return Polynomial(*(coef * other for coef in self))
+    def __rmul__(self, other: Real) -> RealPoly:
+        if isinstance(other, Real):
+            return RealPoly(*(coef * other for coef in self))
         else:
             return NotImplemented
 
-    def __floordiv__(self, other: Polynomial | Number) -> Polynomial:
-        if isinstance(other, Polynomial):
+    def __floordiv__(self, other: RealPoly | Real) -> RealPoly:
+        if isinstance(other, RealPoly):
             return self.divmod(other)[0]
-        elif isinstance(other, Number):
-            return self.divmod(Polynomial(other))[0]
+        elif isinstance(other, Real):
+            return self.divmod(RealPoly(other))[0]
         else:
             return NotImplemented
 
-    def __rfloordiv__(self, other: Number) -> Polynomial:
-        if isinstance(other, Number):
-            return Polynomial(other).divmod(self)[0]
+    def __rfloordiv__(self, other: Real) -> RealPoly:
+        if isinstance(other, Real):
+            return RealPoly(other).divmod(self)[0]
         else:
             return NotImplemented
 
-    def __mod__(self, other: Polynomial | Number) -> Polynomial:
-        if isinstance(other, Polynomial):
+    def __mod__(self, other: RealPoly | Real) -> RealPoly:
+        if isinstance(other, RealPoly):
             return self.divmod(other)[1]
-        elif isinstance(other, Number):
-            return self.divmod(Polynomial(other))[1]
+        elif isinstance(other, Real):
+            return self.divmod(RealPoly(other))[1]
         else:
             return NotImplemented
 
-    def __rmod__(self, other: Number) -> Polynomial:
-        if isinstance(other, Number):
-            return Polynomial(other).divmod(self)[1]
+    def __rmod__(self, other: Real) -> RealPoly:
+        if isinstance(other, Real):
+            return RealPoly(other).divmod(self)[1]
         else:
             return NotImplemented
 
-    def __divmod__(self, divisor: Polynomial | Number, /) -> tuple[Polynomial, Polynomial]:
-        if isinstance(divisor, Number):
-            divisor = Polynomial(divisor)
-        elif not isinstance(divisor, Polynomial):
+    def __divmod__(self, divisor: RealPoly | Real, /) -> tuple[RealPoly, RealPoly]:
+        if isinstance(divisor, Real):
+            divisor = RealPoly(divisor)
+        elif not isinstance(divisor, RealPoly):
             return NotImplemented
         if len(divisor) == 0:
             raise ZeroDivisionError(f"division by zero: {self} /% {divisor}")
@@ -200,32 +214,32 @@ class Polynomial:
             for sor_expo in range(sor_len - 1):
                 dend_expo = scan_expo + sor_expo
                 remainder[dend_expo] -= coef * divisor[sor_expo]
-        return (Polynomial(*quotient), Polynomial() if len(remainder) == 0 else Polynomial(*remainder))
+        return (RealPoly(*quotient), RealPoly() if len(remainder) == 0 else RealPoly(*remainder))
 
-    def __rdivmod__(self, divident: Number) -> tuple[Polynomial, Polynomial]:
-        return divmod(Polynomial(divident), self)
+    def __rdivmod__(self, divident: Real) -> tuple[RealPoly, RealPoly]:
+        return divmod(RealPoly(divident), self)
 
-    def __pow__(self, other: Polynomial | Number) -> Polynomial:
-        if isinstance(other, Polynomial):
+    def __pow__(self, other: RealPoly | Real) -> RealPoly:
+        if isinstance(other, RealPoly):
             if len(other) > 1:
                 raise ValueError(
                     "cannot raise polynomial to power of polynomial")
             expo = other[0]
-        elif isinstance(other, Number):
+        elif isinstance(other, Real):
             expo = other
         else:
             return NotImplemented
         if expo < 0:
             raise ValueError("cannot raise polynomial to negative power")
-        result = Polynomial(1)
+        result = RealPoly(1)
         for _ in range(expo):
             result *= self
         return result
 
-    def __neg__(self) -> Polynomial:
-        return Polynomial(*(-coef for coef in self))
+    def __neg__(self) -> RealPoly:
+        return RealPoly(*(-coef for coef in self))
 
-    def __pos__(self) -> Polynomial:
+    def __pos__(self) -> RealPoly:
         return self
 
     @property
@@ -233,21 +247,21 @@ class Polynomial:
         return all(coef % 1 == 0 for coef in self)
 
     @property
-    def derivative(self) -> Polynomial:
-        return Polynomial(
+    def derivative(self) -> RealPoly:
+        return RealPoly(
             *(coef * expo
               for expo, coef in enumerate(self[1:], 1))
         )
 
     @property
-    def integral(self) -> Polynomial:
-        return Polynomial(
+    def integral(self) -> RealPoly:
+        return RealPoly(
             0,
             *(div(coef, (expo + 1))
               for expo, coef in enumerate(self))
         )
 
-    def get_sign_at(self, value: Number) -> int:
+    def get_sign_at(self, value: Real) -> int:
         if len(self) == 0:
             return 0
         elif value == -inf:
@@ -257,7 +271,7 @@ class Polynomial:
         else:
             return cmp(self(value), 0)
 
-    def inc_mono_real_solve(self, lbound: Number, rbound: Number, /) -> Number | None:
+    def inc_mono_real_solve(self, lbound: Real, rbound: Real, /) -> Real | None:
         while True:
             mbound = (lbound + rbound) / 2
             if rbound == mbound or mbound == lbound:
@@ -278,7 +292,7 @@ class Polynomial:
                 return mbound
 
     # solving within monotonic region guaranteed by either df/dx=0 bound or infinity bound
-    def bound_real_solve(self, lbound: Number, rbound: Number, /) -> Number | None:
+    def bound_real_solve(self, lbound: Real, rbound: Real, /) -> Real | None:
         lbound = float(lbound)
         rbound = float(rbound)
         lsign = self.get_sign_at(lbound)
@@ -329,7 +343,7 @@ class Polynomial:
             return (-self).inc_mono_real_solve(lbound, rbound)
 
     @property
-    def real_solutions(self) -> tuple[Number, ...]:
+    def real_solutions(self) -> tuple[Real, ...]:
         if len(self) <= 1:
             return ()  # return none if polynomial is constant, either 0 or not
         elif len(self) == 2:
@@ -360,7 +374,7 @@ class Polynomial:
             return tuple(zeroes)
 
 
-X = Polynomial(0, 1)
+X = RealPoly(0, 1)
 
 
 def main():
@@ -383,7 +397,7 @@ def main():
     print(f"{divmod(a, b)=}")
     print(a - 6)
     print((a - 6).real_solutions)
-    c = Polynomial(0, 1, 2, 3, 4, 5, 6, 7, 8)
+    c = RealPoly(0, 1, 2, 3, 4, 5, 6, 7, 8)
     print(c)
     print(c.real_solutions)
     for x in c.real_solutions:
